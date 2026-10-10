@@ -1,0 +1,230 @@
+"""Deterministic synthetic SaaS batch generator; no network or cloud client."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import io
+import json
+from datetime import date, timedelta
+from pathlib import Path
+
+from data.contracts import SCHEMA_VERSION, SOURCES, ContractViolation, delivery_path
+
+SCENARIOS = ("normal", "duplicate-record", "orphan-reference", "invalid-domain")
+
+
+def _csv_bytes(columns: tuple[str, ...], rows: list[dict[str, object]]) -> bytes:
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=columns, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return stream.getvalue().encode("utf-8")
+
+
+def generate_batch(
+    output_root: Path,
+    business_date: str,
+    batch_id: str,
+    seed: int,
+    accounts: int,
+    scenario: str,
+) -> Path:
+    if scenario not in SCENARIOS or accounts < 2 or seed < 0:
+        raise ContractViolation("unsupported scenario, account count or seed")
+    day = date.fromisoformat(business_date)
+    target = delivery_path(output_root, business_date, batch_id)
+    if target.exists():
+        raise ContractViolation("immutable delivery already exists")
+    timestamp = f"{day.isoformat()}T00:00:00Z"
+    regions = ("AMER", "EMEA", "APAC")
+    segments = ("SMB", "MID_MARKET", "ENTERPRISE")
+    account_rows = []
+    subscription_rows = []
+    invoice_rows = []
+    usage_rows = []
+    support_rows = []
+    for index in range(1, accounts + 1):
+        account_id = f"A{index:05d}"
+        subscription_id = f"S{index:05d}"
+        product_id = f"P{1 + (index + seed) % 2}"
+        region = regions[(index + seed) % 3]
+        segment = segments[(index + seed // 3) % 3]
+        account_rows.append(
+            {
+                "account_id": account_id,
+                "account_name": f"Synthetic Customer {index}",
+                "segment": segment,
+                "industry": "SOFTWARE",
+                "region": region,
+                "country": {"AMER": "US", "EMEA": "GB", "APAC": "IN"}[region],
+                "sales_owner": f"Synthetic Seller {index % 4}",
+                "customer_success_manager": f"Synthetic CSM {index % 3}",
+                "account_status": "ACTIVE",
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            }
+        )
+        subscription_rows.append(
+            {
+                "subscription_id": subscription_id,
+                "account_id": account_id,
+                "product_id": product_id,
+                "plan_id": "PL_ANNUAL",
+                "subscription_start_date": (day - timedelta(days=90)).isoformat(),
+                "subscription_end_date": (day + timedelta(days=275)).isoformat(),
+                "billing_frequency": "ANNUAL",
+                "quantity": 5 + index % 8,
+                "contract_value": f"{(1200 + index * 37 + seed % 19):.2f}",
+                "currency": "USD",
+                "subscription_status": "ACTIVE",
+                "renewal_date": (day + timedelta(days=275)).isoformat(),
+                "updated_at": timestamp,
+            }
+        )
+        invoice_rows.append(
+            {
+                "invoice_id": f"I{index:05d}",
+                "account_id": account_id,
+                "subscription_id": subscription_id,
+                "invoice_date": day.isoformat(),
+                "due_date": (day + timedelta(days=30)).isoformat(),
+                "amount": f"{(100 + index * 3):.2f}",
+                "currency": "USD",
+                "payment_status": "OPEN",
+                "paid_date": "",
+                "updated_at": timestamp,
+            }
+        )
+        usage_rows.append(
+            {
+                "account_id": account_id,
+                "product_id": product_id,
+                "usage_date": day.isoformat(),
+                "active_users": 2 + index % 4,
+                "licensed_users": 5 + index % 8,
+                "sessions": 10 + index,
+                "api_calls": 80 + index * 2,
+                "failed_requests": index % 3,
+                "usage_minutes": 100 + index * 7,
+                "updated_at": timestamp,
+            }
+        )
+        support_rows.append(
+            {
+                "case_id": f"C{index:05d}",
+                "account_id": account_id,
+                "opened_at": timestamp,
+                "closed_at": "",
+                "severity": "LOW",
+                "category": "HOW_TO",
+                "status": "OPEN",
+                "sla_breached": "false",
+                "resolution_minutes": "",
+                "updated_at": timestamp,
+            }
+        )
+    if scenario == "duplicate-record":
+        account_rows.append(dict(account_rows[0]))
+    elif scenario == "orphan-reference":
+        subscription_rows[0]["account_id"] = "A99999"
+    elif scenario == "invalid-domain":
+        account_rows[0]["account_status"] = "UNKNOWN_STATE"
+    target_rows = [
+        {
+            "target_month": day.replace(day=1).isoformat(),
+            "region": region,
+            "segment": segment,
+            "arr_target": "120000.00",
+            "new_arr_target": "25000.00",
+            "renewal_target": "90.00",
+            "updated_at": timestamp,
+        }
+        for region, segment in sorted({(r["region"], r["segment"]) for r in account_rows})
+    ]
+    rows_by_entity = {
+        "accounts": account_rows,
+        "subscriptions": subscription_rows,
+        "invoices": invoice_rows,
+        "product_usage_daily": usage_rows,
+        "support_cases": support_rows,
+        "sales_targets": target_rows,
+        "products": [
+            {
+                "product_id": "P1",
+                "product_name": "Analytics",
+                "product_family": "CORE",
+                "active": "true",
+            },
+            {
+                "product_id": "P2",
+                "product_name": "Automation",
+                "product_family": "CORE",
+                "active": "true",
+            },
+        ],
+        "plans": [
+            {
+                "plan_id": "PL_ANNUAL",
+                "plan_name": "Annual",
+                "billing_frequency": "ANNUAL",
+                "active": "true",
+            },
+            {
+                "plan_id": "PL_MONTHLY",
+                "plan_name": "Monthly",
+                "billing_frequency": "MONTHLY",
+                "active": "true",
+            },
+        ],
+    }
+    target.mkdir(parents=True)
+    entries = []
+    for source, entities in SOURCES.items():
+        (target / source).mkdir()
+        for entity, columns in entities.items():
+            relative = f"{source}/{entity}.csv"
+            payload = _csv_bytes(columns, rows_by_entity[entity])
+            (target / relative).write_bytes(payload)
+            entries.append(
+                {
+                    "source": source,
+                    "entity": entity,
+                    "relative_path": relative,
+                    "format": "csv",
+                    "columns": list(columns),
+                    "row_count": len(rows_by_entity[entity]),
+                    "sha256": hashlib.sha256(payload).hexdigest(),
+                }
+            )
+    manifest = {
+        "business_date": business_date,
+        "batch_id": batch_id,
+        "seed": seed,
+        "scenario": scenario,
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": timestamp,
+        "files": entries,
+    }
+    (target / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (target / "_SUCCESS").write_text("", encoding="utf-8")
+    return target
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--business-date", required=True)
+    parser.add_argument("--batch-id", required=True)
+    parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--accounts", type=int, required=True)
+    parser.add_argument("--scenario", choices=SCENARIOS, required=True)
+    parser.add_argument("--output-root", type=Path, required=True)
+    arguments = parser.parse_args()
+    print(generate_batch(**vars(arguments)))
+
+
+if __name__ == "__main__":
+    main()

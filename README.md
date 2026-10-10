@@ -34,3 +34,15 @@ The local DuckDB path is the executable proof; it cannot establish Snowflake or 
 | Not evidenced | Real customers, cloud execution, scale, cloud cost, SLA, performance or service-side security enforcement. |
 
 See [architecture](docs/architecture.md), [safety](docs/safety.md) and the [10-day roadmap](docs/10-day-roadmap.md). No CV claim of a completed production platform is justified yet.
+
+## Day-1 local run
+
+Use the hash-locked `requirements.lock` in a local virtual environment. Then generate and validate a synthetic batch; the landing step refuses a failed contract:
+
+```text
+python -m data.generate_saas_batch --business-date 2026-10-09 --batch-id demo-1 --seed 17 --accounts 12 --scenario normal --output-root data/input
+python -m local.landing --delivery data/input/business_date=2026-10-09/batch_id=demo-1 --database dbt/target/saas.duckdb
+dbt build --project-dir dbt --profiles-dir dbt --target local
+```
+
+The `snowflake_static` profile contains deliberately fake identifiers. Do not run it or substitute real credentials. Day 1 implements eight source contracts and only the first two staging models; complete staging, revenue logic, marts and Fabric artifacts remain planned.

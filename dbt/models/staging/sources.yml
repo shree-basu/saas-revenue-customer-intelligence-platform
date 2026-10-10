@@ -1,0 +1,28 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: accounts
+        columns:
+          - name: account_id
+            data_tests: [not_null, unique]
+      - name: subscriptions
+        columns:
+          - name: subscription_id
+            data_tests: [not_null, unique]
+          - name: account_id
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('raw', 'accounts')
+                    field: account_id
+      - name: invoices
+      - name: product_usage_daily
+      - name: support_cases
+      - name: sales_targets
+        columns:
+          - name: target_month
+            data_tests: [not_null]
+      - name: products
+      - name: plans

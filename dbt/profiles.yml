@@ -1,0 +1,16 @@
+saas_revenue:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('SAAS_DUCKDB_PATH', 'dbt/target/saas.duckdb') }}"
+      threads: 2
+    snowflake_static:
+      type: snowflake
+      account: EXAMPLE_ACCOUNT_DO_NOT_CONNECT
+      user: EXAMPLE_USER_DO_NOT_CONNECT
+      database: EXAMPLE_DATABASE
+      warehouse: EXAMPLE_WAREHOUSE
+      schema: EXAMPLE_SCHEMA
+      role: EXAMPLE_ROLE
+      threads: 1
