@@ -6,6 +6,8 @@ import csv
 import hashlib
 import json
 import re
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 SCHEMA_VERSION = 1
@@ -126,6 +128,115 @@ def _assert_unique(rows: list[dict[str, str]], keys: tuple[str, ...], entity: st
         raise ContractViolation(f"blank or duplicate {entity} grain: {keys}")
 
 
+def _date(value: str, label: str) -> date:
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise ContractViolation(f"invalid date in {label}") from exc
+
+
+def _timestamp(value: str, label: str) -> None:
+    try:
+        datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ContractViolation(f"invalid timestamp in {label}") from exc
+
+
+def _number(value: str, label: str, *, integral: bool = False) -> Decimal:
+    try:
+        number = Decimal(value)
+    except InvalidOperation as exc:
+        raise ContractViolation(f"invalid numeric value in {label}") from exc
+    if not number.is_finite() or number < 0:
+        raise ContractViolation(f"negative or non-finite value in {label}")
+    if integral and number != number.to_integral_value():
+        raise ContractViolation(f"non-integer value in {label}")
+    if not integral and number.as_tuple().exponent < -2:
+        raise ContractViolation(f"excessive monetary scale in {label}")
+    return number
+
+
+def _domain(row: dict[str, str], field: str, allowed: set[str], entity: str) -> None:
+    if row[field] not in allowed:
+        raise ContractViolation(f"invalid {entity}.{field}")
+
+
+def _check_semantics(parsed: dict[str, list[dict[str, str]]]) -> None:
+    product_ids = {row["product_id"] for row in parsed["products"]}
+    plan_ids = {row["plan_id"] for row in parsed["plans"]}
+    for row in parsed["accounts"]:
+        for field, allowed in {
+            "account_status": {"ACTIVE", "INACTIVE"},
+            "segment": {"SMB", "MID_MARKET", "ENTERPRISE"},
+            "region": {"AMER", "EMEA", "APAC"},
+        }.items():
+            _domain(row, field, allowed, "accounts")
+        _timestamp(row["created_at"], "accounts.created_at")
+        _timestamp(row["updated_at"], "accounts.updated_at")
+    for row in parsed["subscriptions"]:
+        for field, allowed in {
+            "billing_frequency": {"ANNUAL", "MONTHLY"},
+            "subscription_status": {"ACTIVE", "INACTIVE", "CANCELLED"},
+            "currency": {"USD"},
+        }.items():
+            _domain(row, field, allowed, "subscriptions")
+        if row["product_id"] not in product_ids or row["plan_id"] not in plan_ids:
+            raise ContractViolation("orphan product or plan reference")
+        start = _date(row["subscription_start_date"], "subscriptions.start")
+        end = _date(row["subscription_end_date"], "subscriptions.end")
+        renewal = _date(row["renewal_date"], "subscriptions.renewal")
+        if start > end or renewal < start:
+            raise ContractViolation("invalid subscription date order")
+        _number(row["quantity"], "subscriptions.quantity", integral=True)
+        _number(row["contract_value"], "subscriptions.contract_value")
+        _timestamp(row["updated_at"], "subscriptions.updated_at")
+    for row in parsed["invoices"]:
+        _domain(row, "currency", {"USD"}, "invoices")
+        _domain(row, "payment_status", {"OPEN", "PAID", "OVERDUE", "VOID"}, "invoices")
+        invoice_date = _date(row["invoice_date"], "invoices.invoice_date")
+        if _date(row["due_date"], "invoices.due_date") < invoice_date:
+            raise ContractViolation("invoice due before issue")
+        if row["paid_date"]:
+            _date(row["paid_date"], "invoices.paid_date")
+        if row["payment_status"] == "PAID" and not row["paid_date"]:
+            raise ContractViolation("paid invoice lacks paid_date")
+        _number(row["amount"], "invoices.amount")
+        _timestamp(row["updated_at"], "invoices.updated_at")
+    for row in parsed["product_usage_daily"]:
+        if row["product_id"] not in product_ids:
+            raise ContractViolation("orphan usage product")
+        _date(row["usage_date"], "usage.usage_date")
+        active = _number(row["active_users"], "usage.active_users", integral=True)
+        licensed = _number(row["licensed_users"], "usage.licensed_users", integral=True)
+        if active > licensed:
+            raise ContractViolation("active users exceed licensed users")
+        for field in ("sessions", "api_calls", "failed_requests", "usage_minutes"):
+            _number(row[field], f"usage.{field}", integral=True)
+        _timestamp(row["updated_at"], "usage.updated_at")
+    for row in parsed["support_cases"]:
+        _domain(row, "severity", {"LOW", "MEDIUM", "HIGH", "CRITICAL"}, "support_cases")
+        _domain(row, "status", {"OPEN", "CLOSED"}, "support_cases")
+        _domain(row, "sla_breached", {"true", "false"}, "support_cases")
+        _timestamp(row["opened_at"], "support_cases.opened_at")
+        if row["closed_at"]:
+            _timestamp(row["closed_at"], "support_cases.closed_at")
+        if row["resolution_minutes"]:
+            _number(row["resolution_minutes"], "support_cases.resolution_minutes", integral=True)
+        _timestamp(row["updated_at"], "support_cases.updated_at")
+    for row in parsed["sales_targets"]:
+        month = _date(row["target_month"], "sales_targets.target_month")
+        if month.day != 1:
+            raise ContractViolation("target_month must be first of month")
+        _domain(row, "region", {"AMER", "EMEA", "APAC"}, "sales_targets")
+        _domain(row, "segment", {"SMB", "MID_MARKET", "ENTERPRISE"}, "sales_targets")
+        for field in ("arr_target", "new_arr_target", "renewal_target"):
+            _number(row[field], f"sales_targets.{field}")
+        _timestamp(row["updated_at"], "sales_targets.updated_at")
+    for entity in ("products", "plans"):
+        for row in parsed[entity]:
+            _domain(row, "active", {"true", "false"}, entity)
+
+
 def validate_delivery(path: Path) -> dict:
     """Validate identity, exact file set, counts, hashes, schemas and source grains."""
     if (
@@ -200,6 +311,5 @@ def validate_delivery(path: Path) -> dict:
             raise ContractViolation(f"orphan account reference in {entity}")
     if any(row["subscription_id"] not in subscription_ids for row in parsed["invoices"]):
         raise ContractViolation("orphan subscription reference")
-    if any(row["account_status"] not in {"ACTIVE", "INACTIVE"} for row in parsed["accounts"]):
-        raise ContractViolation("invalid account status")
+    _check_semantics(parsed)
     return manifest

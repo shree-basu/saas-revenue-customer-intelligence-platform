@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 from pathlib import Path
 
@@ -92,4 +93,45 @@ def test_modified_existing_delivery(delivery: Path) -> None:
     with (delivery / "billing/invoices.csv").open("w", newline="", encoding="utf-8") as handle:
         csv.writer(handle).writerows(rows)
     with pytest.raises(ContractViolation, match="checksum"):
+        validate_delivery(delivery)
+
+
+def _change_and_rehash(delivery: Path, relative: str, field: str, value: str) -> None:
+    csv_path = delivery / relative
+    with csv_path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        columns = reader.fieldnames
+        rows = list(reader)
+    assert columns is not None
+    rows[0][field] = value
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    manifest_path = delivery / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for entry in manifest["files"]:
+        if entry["relative_path"] == relative:
+            entry["sha256"] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("relative", "field", "value", "message"),
+    [
+        ("billing/subscriptions.csv", "currency", "EUR", "currency"),
+        ("billing/subscriptions.csv", "product_id", "P999", "orphan product"),
+        ("billing/invoices.csv", "amount", "-0.01", "negative"),
+        ("billing/invoices.csv", "amount", "1.001", "scale"),
+        ("billing/invoices.csv", "due_date", "not-a-date", "invalid date"),
+        ("product/product_usage_daily.csv", "active_users", "999", "active users"),
+        ("finance/sales_targets.csv", "target_month", "2026-10-15", "first of month"),
+        ("support/support_cases.csv", "severity", "UNDEFINED", "severity"),
+    ],
+)
+def test_source_dq_rejects_well_hashed_bad_data(
+    delivery: Path, relative: str, field: str, value: str, message: str
+) -> None:
+    _change_and_rehash(delivery, relative, field, value)
+    with pytest.raises(ContractViolation, match=message):
         validate_delivery(delivery)
