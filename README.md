@@ -45,4 +45,4 @@ python -m local.landing --delivery data/input/business_date=2026-10-09/batch_id=
 dbt build --project-dir dbt --profiles-dir dbt --target local
 ```
 
-The `snowflake_static` profile contains deliberately fake identifiers. Do not run it or substitute real credentials. Day 2 completes eight staging models and source DQ; revenue logic, marts and Fabric artifacts remain planned. See the [source contract](docs/source-contracts.md).
+The `snowflake_static` profile contains deliberately fake identifiers. Do not run it or substitute real credentials. Day 2 completes eight staging models and source DQ, plus [static Snowflake design examples](snowflake/README.md). Revenue logic, marts and Fabric artifacts remain planned. See the [source contract](docs/source-contracts.md).
