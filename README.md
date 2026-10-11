@@ -1,6 +1,6 @@
 # Global SaaS Revenue & Customer Intelligence Platform
 
-**Status: Day 1 of 10 — under active development.** This is a synthetic, cloud-free analytics-engineering reference, not a deployed service or a claim of production operation.
+**Status: Day 3 of 10 — under active development.** This is a synthetic, cloud-free analytics-engineering reference, not a deployed service or a claim of production operation.
 
 ## Business problem
 
@@ -26,16 +26,16 @@ The local DuckDB path is the executable proof; it cannot establish Snowflake or 
 
 ## Evidence boundary
 
-| Category | Day-1 position |
+| Category | Current position |
 | --- | --- |
-| Implemented and locally tested | Repository safety checks, deterministic synthetic source contracts and local dbt foundation after the second Day-1 commit. |
-| Statically specified | Snowflake/Fabric target topology only; no runnable cloud connection. |
+| Implemented and locally tested | Deterministic synthetic source contracts, eight validated staging models, current account/product/date dimensions, three core facts and dbt referential/reconciliation tests. |
+| Statically specified | Snowflake governance SQL and Snowflake/Fabric target topology only; no runnable cloud connection. |
 | Production target, not deployed | Snowflake warehouse, Fabric Data Factory, Mirroring/OneLake and Power BI Service. |
 | Not evidenced | Real customers, cloud execution, scale, cloud cost, SLA, performance or service-side security enforcement. |
 
 See [architecture](docs/architecture.md), [safety](docs/safety.md) and the [10-day roadmap](docs/10-day-roadmap.md). No CV claim of a completed production platform is justified yet.
 
-## Day-1 local run
+## Local run
 
 Use the hash-locked `requirements.lock` in a local virtual environment. Then generate and validate a synthetic batch; the landing step refuses a failed contract:
 
@@ -45,4 +45,4 @@ python -m local.landing --delivery data/input/business_date=2026-10-09/batch_id=
 dbt build --project-dir dbt --profiles-dir dbt --target local
 ```
 
-The `snowflake_static` profile contains deliberately fake identifiers. Do not run it or substitute real credentials. Day 2 completes eight staging models and source DQ, plus [static Snowflake design examples](snowflake/README.md). Revenue logic, marts and Fabric artifacts remain planned. See the [source contract](docs/source-contracts.md).
+The `snowflake_static` profile contains deliberately fake identifiers. Do not run it or substitute real credentials. Day 2 completed eight staging models and source DQ, plus [static Snowflake design examples](snowflake/README.md). Day 3 added the [dimensional core](docs/data-model.md). Account SCD2 snapshots, replay-safe incremental processing, revenue logic, marts and Fabric artifacts remain planned. See the [source contract](docs/source-contracts.md).

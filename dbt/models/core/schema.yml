@@ -21,3 +21,79 @@ models:
         data_tests: [not_null, unique]
       - name: calendar_date
         data_tests: [not_null, unique]
+  - name: fct_invoices
+    description: One invoice per invoice_id; USD billing amount is not MRR or recognized revenue.
+    columns:
+      - name: invoice_key
+        data_tests: [not_null, unique]
+      - name: invoice_id
+        data_tests: [not_null, unique]
+      - name: subscription_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_subscriptions')
+                field: subscription_id
+      - name: account_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: invoice_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: amount
+        data_tests: [not_null]
+  - name: fct_product_usage_daily
+    description: One row per account, product and usage_date; no aggregation across that grain.
+    columns:
+      - name: usage_key
+        data_tests: [not_null, unique]
+      - name: account_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: usage_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+  - name: fct_support_cases
+    description: One row per support case_id, including open cases without closed_at.
+    columns:
+      - name: case_key
+        data_tests: [not_null, unique]
+      - name: case_id
+        data_tests: [not_null, unique]
+      - name: account_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: opened_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
