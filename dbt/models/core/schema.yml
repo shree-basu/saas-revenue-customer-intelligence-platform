@@ -1,0 +1,23 @@
+version: 2
+models:
+  - name: dim_account
+    description: One row per account_id in the latest validated batch; current state, not SCD2 history.
+    columns:
+      - name: account_key
+        data_tests: [not_null, unique]
+      - name: account_id
+        data_tests: [not_null, unique]
+  - name: dim_product
+    description: One row per product_id in the latest validated batch.
+    columns:
+      - name: product_key
+        data_tests: [not_null, unique]
+      - name: product_id
+        data_tests: [not_null, unique]
+  - name: dim_date
+    description: One row per distinct non-null business date observed in the validated batch.
+    columns:
+      - name: date_key
+        data_tests: [not_null, unique]
+      - name: calendar_date
+        data_tests: [not_null, unique]

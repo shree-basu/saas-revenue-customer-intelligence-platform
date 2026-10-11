@@ -8,3 +8,5 @@ models:
   saas_revenue:
     staging:
       +materialized: view
+    core:
+      +materialized: table
