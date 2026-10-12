@@ -96,14 +96,16 @@ def test_modified_existing_delivery(delivery: Path) -> None:
         validate_delivery(delivery)
 
 
-def _change_and_rehash(delivery: Path, relative: str, field: str, value: str) -> None:
+def _change_and_rehash(
+    delivery: Path, relative: str, field: str, value: str, row_index: int = 0
+) -> None:
     csv_path = delivery / relative
     with csv_path.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         columns = reader.fieldnames
         rows = list(reader)
     assert columns is not None
-    rows[0][field] = value
+    rows[row_index][field] = value
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
@@ -137,4 +139,18 @@ def test_source_dq_rejects_well_hashed_bad_data(
 ) -> None:
     _change_and_rehash(delivery, relative, field, value)
     with pytest.raises(ContractViolation, match=message):
+        validate_delivery(delivery)
+
+
+def test_monthly_state_rejects_gap_and_latest_drift(delivery: Path) -> None:
+    relative = "billing/subscription_monthly_states.csv"
+    _change_and_rehash(delivery, relative, "state_month", "2026-08-01")
+    with pytest.raises(ContractViolation, match="contiguous"):
+        validate_delivery(delivery)
+
+
+def test_monthly_state_rejects_current_subscription_mismatch(delivery: Path) -> None:
+    relative = "billing/subscription_monthly_states.csv"
+    _change_and_rehash(delivery, relative, "contract_value", "999.00", row_index=1)
+    with pytest.raises(ContractViolation, match="latest state differs"):
         validate_delivery(delivery)

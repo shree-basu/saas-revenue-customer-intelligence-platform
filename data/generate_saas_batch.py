@@ -69,7 +69,7 @@ def generate_batch(
                 "updated_at": timestamp,
             }
         )
-        base_annual = 1200 + index * 120
+        base_annual = 1200 + index * 120 + seed % 19
         movement = index % 5
         prior_annual = 0 if movement == 1 else base_annual
         current_annual = {

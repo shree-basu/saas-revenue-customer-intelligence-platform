@@ -97,3 +97,43 @@ models:
               arguments:
                 to: ref('dim_date')
                 field: date_key
+  - name: fct_subscription_movements
+    description: One subscription per month after the initial observed baseline; signed MRR delta by mutually exclusive type.
+    columns:
+      - name: movement_key
+        data_tests: [not_null, unique]
+      - name: subscription_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_subscriptions')
+                field: subscription_id
+      - name: account_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: state_month_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: movement_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [NEW, EXPANSION, CONTRACTION, CHURN, FLAT]
+      - name: movement_mrr_usd
+        data_tests: [not_null]
