@@ -17,6 +17,17 @@ sources:
                   arguments:
                     to: source('raw', 'accounts')
                     field: account_id
+      - name: subscription_monthly_states
+        columns:
+          - name: subscription_id
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('raw', 'subscriptions')
+                    field: subscription_id
+          - name: state_month
+            data_tests: [not_null]
       - name: invoices
         columns:
           - name: invoice_id

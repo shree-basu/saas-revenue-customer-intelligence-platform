@@ -10,6 +10,7 @@ with observed_dates as (
     union select subscription_end_date from {{ ref('stg_subscriptions') }}
     union select renewal_date from {{ ref('stg_subscriptions') }}
     union select target_month from {{ ref('stg_sales_targets') }}
+    union select state_month from {{ ref('stg_subscription_monthly_states') }}
 )
 select
     cast(extract(year from calendar_date) * 10000

@@ -42,9 +42,12 @@ def generate_batch(
     segments = ("SMB", "MID_MARKET", "ENTERPRISE")
     account_rows = []
     subscription_rows = []
+    monthly_state_rows = []
     invoice_rows = []
     usage_rows = []
     support_rows = []
+    current_month = day.replace(day=1)
+    prior_month = (current_month - timedelta(days=1)).replace(day=1)
     for index in range(1, accounts + 1):
         account_id = f"A{index:05d}"
         subscription_id = f"S{index:05d}"
@@ -66,6 +69,38 @@ def generate_batch(
                 "updated_at": timestamp,
             }
         )
+        base_annual = 1200 + index * 120
+        movement = index % 5
+        prior_annual = 0 if movement == 1 else base_annual
+        current_annual = {
+            1: base_annual,
+            2: base_annual + 120,
+            3: base_annual - 120,
+            4: 0,
+            0: base_annual,
+        }[movement]
+        current_status = "CANCELLED" if current_annual == 0 else "ACTIVE"
+        for month, annual_value in ((prior_month, prior_annual), (current_month, current_annual)):
+            monthly_state_rows.append(
+                {
+                    "subscription_id": subscription_id,
+                    "account_id": account_id,
+                    "product_id": product_id,
+                    "state_month": month.isoformat(),
+                    "billing_frequency": "ANNUAL",
+                    "quantity": 5 + index % 8,
+                    "contract_value": f"{annual_value:.2f}",
+                    "currency": "USD",
+                    "subscription_status": (
+                        "ACTIVE"
+                        if annual_value
+                        else "INACTIVE"
+                        if month == prior_month
+                        else "CANCELLED"
+                    ),
+                    "updated_at": f"{month.isoformat()}T00:00:00Z",
+                }
+            )
         subscription_rows.append(
             {
                 "subscription_id": subscription_id,
@@ -76,9 +111,9 @@ def generate_batch(
                 "subscription_end_date": (day + timedelta(days=275)).isoformat(),
                 "billing_frequency": "ANNUAL",
                 "quantity": 5 + index % 8,
-                "contract_value": f"{(1200 + index * 37 + seed % 19):.2f}",
+                "contract_value": f"{current_annual:.2f}",
                 "currency": "USD",
-                "subscription_status": "ACTIVE",
+                "subscription_status": current_status,
                 "renewal_date": (day + timedelta(days=275)).isoformat(),
                 "updated_at": timestamp,
             }
@@ -146,6 +181,7 @@ def generate_batch(
     rows_by_entity = {
         "accounts": account_rows,
         "subscriptions": subscription_rows,
+        "subscription_monthly_states": monthly_state_rows,
         "invoices": invoice_rows,
         "product_usage_daily": usage_rows,
         "support_cases": support_rows,

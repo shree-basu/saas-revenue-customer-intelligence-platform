@@ -1,0 +1,11 @@
+version: 2
+models:
+  - name: int_subscription_monthly_mrr
+    description: One validated USD subscription state per subscription/month, normalized to monthly recurring value.
+    columns:
+      - name: subscription_id
+        data_tests: [not_null]
+      - name: state_month
+        data_tests: [not_null]
+      - name: mrr_usd
+        data_tests: [not_null]

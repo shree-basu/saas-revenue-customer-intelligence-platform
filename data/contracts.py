@@ -6,11 +6,11 @@ import csv
 import hashlib
 import json
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 SOURCES: dict[str, dict[str, tuple[str, ...]]] = {
     "crm": {
         "accounts": (
@@ -41,6 +41,18 @@ SOURCES: dict[str, dict[str, tuple[str, ...]]] = {
             "currency",
             "subscription_status",
             "renewal_date",
+            "updated_at",
+        ),
+        "subscription_monthly_states": (
+            "subscription_id",
+            "account_id",
+            "product_id",
+            "state_month",
+            "billing_frequency",
+            "quantity",
+            "contract_value",
+            "currency",
+            "subscription_status",
             "updated_at",
         ),
         "invoices": (
@@ -190,6 +202,54 @@ def _check_semantics(parsed: dict[str, list[dict[str, str]]]) -> None:
         _number(row["quantity"], "subscriptions.quantity", integral=True)
         _number(row["contract_value"], "subscriptions.contract_value")
         _timestamp(row["updated_at"], "subscriptions.updated_at")
+    subscriptions = {row["subscription_id"]: row for row in parsed["subscriptions"]}
+    states_by_subscription: dict[str, list[tuple[date, dict[str, str]]]] = {}
+    for row in parsed["subscription_monthly_states"]:
+        subscription = subscriptions.get(row["subscription_id"])
+        if subscription is None:
+            raise ContractViolation("orphan monthly subscription state")
+        if (row["account_id"], row["product_id"]) != (
+            subscription["account_id"],
+            subscription["product_id"],
+        ):
+            raise ContractViolation("monthly state subscription identity mismatch")
+        month = _date(row["state_month"], "subscription_monthly_states.state_month")
+        if month.day != 1:
+            raise ContractViolation("state_month must be first of month")
+        _domain(row, "billing_frequency", {"ANNUAL", "MONTHLY"}, "monthly state")
+        _domain(row, "currency", {"USD"}, "monthly state")
+        _domain(row, "subscription_status", {"ACTIVE", "INACTIVE", "CANCELLED"}, "monthly state")
+        quantity = _number(row["quantity"], "monthly state quantity", integral=True)
+        value = _number(row["contract_value"], "monthly state contract_value")
+        if quantity <= 0 or (row["subscription_status"] == "ACTIVE") != (value > 0):
+            raise ContractViolation("monthly state status/value mismatch")
+        _timestamp(row["updated_at"], "monthly state updated_at")
+        states_by_subscription.setdefault(row["subscription_id"], []).append((month, row))
+    if set(states_by_subscription) != set(subscriptions):
+        raise ContractViolation("missing monthly subscription state")
+    for subscription_id, states in states_by_subscription.items():
+        states.sort(key=lambda item: item[0])
+        if len(states) < 2:
+            raise ContractViolation("monthly state needs prior and current months")
+        for (before, _), (after, _) in zip(states, states[1:], strict=False):
+            next_month = (before.replace(day=28) + timedelta(days=4)).replace(day=1)
+            if after != next_month:
+                raise ContractViolation("monthly state months must be contiguous")
+        latest = states[-1][1]
+        current = subscriptions[subscription_id]
+        if any(
+            latest[field] != current[field]
+            for field in (
+                "account_id",
+                "product_id",
+                "billing_frequency",
+                "quantity",
+                "contract_value",
+                "currency",
+                "subscription_status",
+            )
+        ):
+            raise ContractViolation("monthly latest state differs from subscription current state")
     for row in parsed["invoices"]:
         _domain(row, "currency", {"USD"}, "invoices")
         _domain(row, "payment_status", {"OPEN", "PAID", "OVERDUE", "VOID"}, "invoices")
@@ -296,6 +356,7 @@ def validate_delivery(path: Path) -> dict:
     for entity, keys in {
         "accounts": ("account_id",),
         "subscriptions": ("subscription_id",),
+        "subscription_monthly_states": ("subscription_id", "state_month"),
         "invoices": ("invoice_id",),
         "product_usage_daily": ("account_id", "product_id", "usage_date"),
         "support_cases": ("case_id",),
@@ -312,4 +373,17 @@ def validate_delivery(path: Path) -> dict:
     if any(row["subscription_id"] not in subscription_ids for row in parsed["invoices"]):
         raise ContractViolation("orphan subscription reference")
     _check_semantics(parsed)
+    business_month = date.fromisoformat(manifest["business_date"]).replace(day=1).isoformat()
+    if any(row["state_month"] > business_month for row in parsed["subscription_monthly_states"]):
+        raise ContractViolation("monthly state after delivery business month")
+    if any(
+        max(
+            row["state_month"]
+            for row in parsed["subscription_monthly_states"]
+            if row["subscription_id"] == subscription["subscription_id"]
+        )
+        != business_month
+        for subscription in parsed["subscriptions"]
+    ):
+        raise ContractViolation("latest monthly state must match delivery business month")
     return manifest

@@ -1,0 +1,7 @@
+# Subscription MRR contract (Day 4)
+
+The authoritative movement input is `billing/subscription_monthly_states.csv` in each immutable validated delivery, one row per subscription and first-of-month state. It is not reconstructed from invoices or a single current subscription row. `subscriptions` describes the latest state and must match the latest monthly observation.
+
+`contract_value` is the **total subscription contract amount**, not a per-seat amount. `quantity` is descriptive and must not multiply that value. For an ACTIVE annual contract, MRR is `ROUND(contract_value / 12, 2)`; for an ACTIVE monthly contract, MRR equals `contract_value`. INACTIVE/CANCELLED MRR is zero. This project accepts USD only. Inputs are fixed-point cents; default `ROUND` of fixed-point values uses half-away-from-zero in the local DuckDB and target Snowflake semantics. [DuckDB numeric functions](https://duckdb.org/docs/sql/functions/numeric) and [Snowflake ROUND](https://docs.snowflake.com/en/sql-reference/functions/round) describe the respective functions. This policy is for operational MRR, not GAAP revenue recognition, invoicing or proration.
+
+The normal synthetic delivery contains a prior month and current month, including new, expansion, contraction, churn and flat examples. The first observed month is a baseline, not automatically a `NEW` event. Day-4 movement facts compare consecutive states only. Day-5 work will address replay/late-arriving publication; the current model is a local full-refresh reference.

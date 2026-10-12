@@ -1,5 +1,21 @@
 version: 2
 models:
+  - name: stg_subscription_monthly_states
+    description: One state per subscription and calendar month from the validated historical billing feed.
+    columns:
+      - name: subscription_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_subscriptions')
+                field: subscription_id
+      - name: state_month
+        data_tests: [not_null]
+      - name: currency
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [USD]
   - name: stg_accounts
     description: One current CRM account record per account_id in a validated source batch.
     columns:

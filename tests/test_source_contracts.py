@@ -24,7 +24,7 @@ def test_deterministic_bytes_across_distinct_roots(tmp_path: Path) -> None:
     assert {p.relative_to(first): p.read_bytes() for p in first.rglob("*") if p.is_file()} == {
         p.relative_to(second): p.read_bytes() for p in second.rglob("*") if p.is_file()
     }
-    assert len(validate_delivery(first)["files"]) == 8
+    assert len(validate_delivery(first)["files"]) == 9
 
 
 def test_regeneration_refused(delivery: Path) -> None:
@@ -127,6 +127,9 @@ def _change_and_rehash(delivery: Path, relative: str, field: str, value: str) ->
         ("product/product_usage_daily.csv", "active_users", "999", "active users"),
         ("finance/sales_targets.csv", "target_month", "2026-10-15", "first of month"),
         ("support/support_cases.csv", "severity", "UNDEFINED", "severity"),
+        ("billing/subscription_monthly_states.csv", "currency", "EUR", "currency"),
+        ("billing/subscription_monthly_states.csv", "state_month", "2026-09-02", "first of month"),
+        ("billing/subscription_monthly_states.csv", "contract_value", "-1.00", "negative"),
     ],
 )
 def test_source_dq_rejects_well_hashed_bad_data(
