@@ -79,6 +79,28 @@ def test_schema_mismatch(delivery: Path) -> None:
         validate_delivery(delivery)
 
 
+def test_added_source_column_requires_contract_migration(delivery: Path) -> None:
+    relative = "crm/accounts.csv"
+    csv_path = delivery / relative
+    with csv_path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        columns = list(reader.fieldnames or []) + ["enterprise_tier"]
+        rows = [{**row, "enterprise_tier": "TEST"} for row in reader]
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    manifest_path = delivery / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for entry in manifest["files"]:
+        if entry["relative_path"] == relative:
+            entry["columns"] = columns
+            entry["sha256"] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ContractViolation, match="schema mismatch"):
+        validate_delivery(delivery)
+
+
 @pytest.mark.parametrize("scenario", ["duplicate-record", "orphan-reference", "invalid-domain"])
 def test_failure_scenarios(tmp_path: Path, scenario: str) -> None:
     path = generate_batch(tmp_path, "2026-10-09", scenario, 17, 5, scenario)

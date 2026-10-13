@@ -1,6 +1,6 @@
 # Global SaaS Revenue & Customer Intelligence Platform
 
-**Status: Day 4 of 10 — under active development.** This is a synthetic, cloud-free analytics-engineering reference, not a deployed service or a claim of production operation.
+**Status: Day 5 of 10 — under active development.** This is a synthetic, cloud-free analytics-engineering reference, not a deployed service or a claim of production operation.
 
 ## Business problem
 
@@ -28,7 +28,7 @@ The local DuckDB path is the executable proof; it cannot establish Snowflake or 
 
 | Category | Current position |
 | --- | --- |
-| Implemented and locally tested | Deterministic synthetic source contracts, nine validated staging models, current account/product/date dimensions, invoice/usage/support facts, monthly subscription MRR and movement facts with dbt referential/conservation tests. |
+| Implemented and locally tested | Deterministic synthetic source contracts, nine validated staging models, current dimensions, merge-based invoice/usage/support facts, account-history snapshot, monthly MRR and movement facts, replay/backfill/schema-gate checks and dbt reconciliation tests. |
 | Statically specified | Snowflake governance SQL and Snowflake/Fabric target topology only; no runnable cloud connection. |
 | Production target, not deployed | Snowflake warehouse, Fabric Data Factory, Mirroring/OneLake and Power BI Service. |
 | Not evidenced | Real customers, cloud execution, scale, cloud cost, SLA, performance or service-side security enforcement. |
@@ -45,4 +45,4 @@ python -m local.landing --delivery data/input/business_date=2026-10-09/batch_id=
 dbt build --project-dir dbt --profiles-dir dbt --target local
 ```
 
-The `snowflake_static` profile contains deliberately fake identifiers. Do not run it or substitute real credentials. Day 2 completed initial staging and source DQ, plus [static Snowflake design examples](snowflake/README.md). Day 3 added the [dimensional core](docs/data-model.md). Day 4 added the [subscription MRR and movement contract](docs/revenue-contract.md). Account SCD2 snapshots, replay-safe incremental processing, business marts and Fabric artifacts remain planned. See the [source contract](docs/source-contracts.md).
+The `snowflake_static` profile contains deliberately fake identifiers. Do not run it or substitute real credentials. Day 2 completed initial staging and source DQ, plus [static Snowflake design examples](snowflake/README.md). Day 3 added the [dimensional core](docs/data-model.md). Day 4 added the [subscription MRR and movement contract](docs/revenue-contract.md). Day 5 added [incremental replay and account-history evidence](docs/incremental-processing.md). Business marts and Fabric artifacts remain planned. See the [source contract](docs/source-contracts.md). No historical as-of fact join is claimed.

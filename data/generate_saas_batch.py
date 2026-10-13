@@ -18,6 +18,7 @@ SCENARIOS = (
     "orphan-reference",
     "invalid-domain",
     "late-correction",
+    "account-correction",
 )
 
 
@@ -176,6 +177,9 @@ def generate_batch(
         invoice_rows[0]["invoice_date"] = (day - timedelta(days=35)).isoformat()
         invoice_rows[0]["amount"] = "110.00"
         usage_rows[0]["usage_minutes"] = int(usage_rows[0]["usage_minutes"]) + 11
+    elif scenario == "account-correction":
+        account_rows[0]["account_name"] = "Synthetic Customer 1 Revised"
+        account_rows[0]["updated_at"] = f"{day.isoformat()}T12:00:00Z"
     target_rows = [
         {
             "target_month": day.replace(day=1).isoformat(),
