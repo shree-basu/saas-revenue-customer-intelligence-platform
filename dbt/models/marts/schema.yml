@@ -1,0 +1,25 @@
+version: 2
+models:
+  - name: mart_customer_360
+    description: One current account at the latest observed usage date; rule-based health only.
+    columns:
+      - name: account_id
+        data_tests: [not_null, unique]
+      - name: reporting_date
+        data_tests: [not_null]
+      - name: health_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [NO_ACTIVE_SUBSCRIPTION, INSUFFICIENT_USAGE_DATA, AT_RISK, HEALTHY]
+  - name: mart_renewal_pipeline
+    description: Active subscriptions due within 90 days of latest observed usage date; ARR at risk, not booked revenue.
+    columns:
+      - name: subscription_id
+        data_tests: [not_null, unique]
+      - name: account_key
+        data_tests: [not_null]
+      - name: reporting_date
+        data_tests: [not_null]
+      - name: renewal_arr_usd
+        data_tests: [not_null]

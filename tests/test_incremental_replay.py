@@ -68,6 +68,15 @@ def test_incremental_merge_handles_new_late_updated_and_retry(tmp_path: Path) ->
     first = generate_batch(tmp_path / "deliveries", "2026-10-09", "initial", 17, 12, "normal")
     load_delivery(first, database)
     _build(database)
+    with duckdb.connect(str(database), read_only=True) as connection:
+        assert connection.execute("select count(*) from mart_customer_360").fetchone()[0] == 12
+        assert connection.execute("select count(*) from mart_renewal_pipeline").fetchone()[0] > 0
+        assert (
+            connection.execute(
+                "select count(*) from mart_customer_360 where health_status = 'AT_RISK'"
+            ).fetchone()[0]
+            > 0
+        )
     initial = _facts(database)
     assert initial[0] == (date(2026, 10, 9), Decimal("103.00"))
     assert initial[1] == (107,)

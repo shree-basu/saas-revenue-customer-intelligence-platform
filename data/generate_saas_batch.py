@@ -87,6 +87,10 @@ def generate_batch(
             0: base_annual,
         }[movement]
         current_status = "CANCELLED" if current_annual == 0 else "ACTIVE"
+        # Give the local renewal mart real near-term cases without shortening
+        # the annual contract. Other subscriptions remain outside 90 days.
+        contract_age_days = 305 if index % 3 == 0 else 90
+        renewal_date = day + timedelta(days=365 - contract_age_days)
         for month, annual_value in ((prior_month, prior_annual), (current_month, current_annual)):
             monthly_state_rows.append(
                 {
@@ -114,14 +118,14 @@ def generate_batch(
                 "account_id": account_id,
                 "product_id": product_id,
                 "plan_id": "PL_ANNUAL",
-                "subscription_start_date": (day - timedelta(days=90)).isoformat(),
-                "subscription_end_date": (day + timedelta(days=275)).isoformat(),
+                "subscription_start_date": (day - timedelta(days=contract_age_days)).isoformat(),
+                "subscription_end_date": renewal_date.isoformat(),
                 "billing_frequency": "ANNUAL",
                 "quantity": 5 + index % 8,
                 "contract_value": f"{current_annual:.2f}",
                 "currency": "USD",
                 "subscription_status": current_status,
-                "renewal_date": (day + timedelta(days=275)).isoformat(),
+                "renewal_date": renewal_date.isoformat(),
                 "updated_at": timestamp,
             }
         )

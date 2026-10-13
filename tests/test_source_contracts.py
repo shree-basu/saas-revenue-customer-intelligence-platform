@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -25,6 +26,23 @@ def test_deterministic_bytes_across_distinct_roots(tmp_path: Path) -> None:
         p.relative_to(second): p.read_bytes() for p in second.rglob("*") if p.is_file()
     }
     assert len(validate_delivery(first)["files"]) == 9
+
+
+def test_annual_renewals_include_near_and_far_dates(delivery: Path) -> None:
+    with (delivery / "billing/subscriptions.csv").open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    remaining = [
+        (date.fromisoformat(row["renewal_date"]) - date(2026, 10, 9)).days
+        for row in rows
+        if row["subscription_status"] == "ACTIVE"
+    ]
+    assert any(0 <= days <= 90 for days in remaining)
+    assert any(days > 90 for days in remaining)
+    for row in rows:
+        assert (
+            date.fromisoformat(row["subscription_end_date"])
+            - date.fromisoformat(row["subscription_start_date"])
+        ).days == 365
 
 
 def test_regeneration_refused(delivery: Path) -> None:
