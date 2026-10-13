@@ -1,4 +1,5 @@
 -- One account/product/usage date; zero values remain valid observations.
+{{ config(materialized='incremental', unique_key='usage_key', incremental_strategy='merge', on_schema_change='fail') }}
 select
     md5(u.account_id || '|' || u.product_id || '|' || cast(u.usage_date as varchar)) as usage_key,
     u.account_id,

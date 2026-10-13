@@ -1,4 +1,5 @@
 -- One support case per case_id; open cases have no closed date.
+{{ config(materialized='incremental', unique_key='case_id', incremental_strategy='merge', on_schema_change='fail') }}
 select
     md5(s.case_id) as case_key,
     s.case_id,

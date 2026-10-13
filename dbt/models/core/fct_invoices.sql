@@ -1,4 +1,5 @@
 -- One invoice per invoice_id. LEFT JOINs expose missing dimensions to tests.
+{{ config(materialized='incremental', unique_key='invoice_id', incremental_strategy='merge', on_schema_change='fail') }}
 select
     md5(i.invoice_id) as invoice_key,
     i.invoice_id,

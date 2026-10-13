@@ -12,7 +12,13 @@ from pathlib import Path
 
 from data.contracts import SCHEMA_VERSION, SOURCES, ContractViolation, delivery_path
 
-SCENARIOS = ("normal", "duplicate-record", "orphan-reference", "invalid-domain")
+SCENARIOS = (
+    "normal",
+    "duplicate-record",
+    "orphan-reference",
+    "invalid-domain",
+    "late-correction",
+)
 
 
 def _csv_bytes(columns: tuple[str, ...], rows: list[dict[str, object]]) -> bytes:
@@ -166,6 +172,10 @@ def generate_batch(
         subscription_rows[0]["account_id"] = "A99999"
     elif scenario == "invalid-domain":
         account_rows[0]["account_status"] = "UNKNOWN_STATE"
+    elif scenario == "late-correction":
+        invoice_rows[0]["invoice_date"] = (day - timedelta(days=35)).isoformat()
+        invoice_rows[0]["amount"] = "110.00"
+        usage_rows[0]["usage_minutes"] = int(usage_rows[0]["usage_minutes"]) + 11
     target_rows = [
         {
             "target_month": day.replace(day=1).isoformat(),
