@@ -23,3 +23,31 @@ models:
         data_tests: [not_null]
       - name: renewal_arr_usd
         data_tests: [not_null]
+  - name: mart_mrr_waterfall
+    description: One observed movement month after baseline; signed MRR movements and opening/closing balances.
+    columns:
+      - name: reporting_month
+        data_tests: [not_null, unique]
+      - name: opening_mrr_usd
+        data_tests: [not_null]
+      - name: closing_mrr_usd
+        data_tests: [not_null]
+  - name: mart_revenue_retention
+    description: Gross and net dollar retention from observed subscription movements; NULL when opening MRR is zero.
+    columns:
+      - name: reporting_month
+        data_tests: [not_null, unique]
+  - name: mart_revenue_vs_target
+    description: Latest-month current ARR versus planned ARR by region and segment; missing sides remain visible.
+    columns:
+      - name: reporting_month
+        data_tests: [not_null]
+      - name: region
+        data_tests: [not_null]
+      - name: segment
+        data_tests: [not_null]
+      - name: comparison_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [MATCHED, MISSING_TARGET, MISSING_ACTUAL]
