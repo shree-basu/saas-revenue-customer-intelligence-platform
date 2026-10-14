@@ -1,0 +1,15 @@
+{
+  "properties": {
+    "description": "Fail-closed source-control shell for the finance target ingestion contract; not an executable copy pipeline.",
+    "activities": [
+      {
+        "name": "StopUntilApprovedConnectionsAndControlsExist",
+        "type": "Fail",
+        "typeProperties": {
+          "message": "Finance target copy is intentionally disabled. Review the local contract, provision approved connections outside this repository, and implement reconciliation before any cloud run.",
+          "errorCode": "NO_APPROVED_CLOUD_CONNECTION"
+        }
+      }
+    ]
+  }
+}

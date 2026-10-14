@@ -28,6 +28,7 @@ jobs:
           python -m pytest -q
           python scripts/check_repo_safety.py
           python scripts/validate_snowflake_reference.py
+          python scripts/validate_fabric_artifacts.py
       - name: Local dbt reference build
         run: |
           python -m data.generate_saas_batch --business-date 2026-10-09 --batch-id ci-normal --seed 17 --accounts 12 --scenario normal --output-root data/input
