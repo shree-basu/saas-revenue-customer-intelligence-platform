@@ -1,0 +1,12 @@
+{
+  "version": "2.0",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/platform/platformProperties.json",
+  "config": {
+    "logicalId": "5a972edd-c3c0-56df-a33d-cf2ed09c83a0"
+  },
+  "metadata": {
+    "type": "MirroredDatabase",
+    "displayName": "Certified Marts - Unconnected Reference",
+    "description": "Static selected-table Snowflake mirror design; zero connection sentinel."
+  }
+}

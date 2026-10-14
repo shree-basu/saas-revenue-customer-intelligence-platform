@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "source": {
+      "type": "Snowflake",
+      "typeProperties": {
+        "connection": "00000000-0000-0000-0000-000000000000",
+        "database": "SAAS_EXAMPLE_DB"
+      }
+    },
+    "target": {
+      "type": "MountedRelationalDatabase",
+      "typeProperties": {
+        "defaultSchema": "MARTS",
+        "format": "Delta",
+        "retentionInDays": 7
+      }
+    },
+    "mountedTables": [
+      {"source": {"typeProperties": {"schemaName": "MARTS", "tableName": "MART_CUSTOMER_360"}}},
+      {"source": {"typeProperties": {"schemaName": "MARTS", "tableName": "MART_MRR_WATERFALL"}}},
+      {"source": {"typeProperties": {"schemaName": "MARTS", "tableName": "MART_RENEWAL_PIPELINE"}}},
+      {"source": {"typeProperties": {"schemaName": "MARTS", "tableName": "MART_REVENUE_RETENTION"}}},
+      {"source": {"typeProperties": {"schemaName": "MARTS", "tableName": "MART_REVENUE_VS_TARGET"}}}
+    ]
+  }
+}
