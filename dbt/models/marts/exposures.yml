@@ -1,0 +1,18 @@
+exposures:
+  - name: proposed_executive_saas_semantic_model
+    label: Proposed executive SaaS semantic model
+    type: dashboard
+    maturity: low
+    description: >
+      Planned Fabric/Power BI consumption of certified marts; no dashboard,
+      semantic model, Fabric item, or service deployment exists yet.
+    depends_on:
+      - ref('mart_customer_360')
+      - ref('mart_mrr_waterfall')
+      - ref('mart_revenue_retention')
+      - ref('mart_renewal_pipeline')
+      - ref('mart_revenue_vs_target')
+    owner:
+      name: Portfolio reference only (unassigned)
+    meta:
+      lifecycle: planned

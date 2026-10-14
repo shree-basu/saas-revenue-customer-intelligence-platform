@@ -19,9 +19,8 @@ select coalesce(a.reporting_month, t.reporting_month) as reporting_month,
     coalesce(a.region, t.region) as region,
     coalesce(a.segment, t.segment) as segment,
     a.actual_arr_usd, t.target_arr_usd, t.target_new_arr_usd,
-    case when t.target_arr_usd > 0 and a.actual_arr_usd is not null
-        then cast(100 * a.actual_arr_usd / t.target_arr_usd as decimal(18, 4))
-    end as arr_attainment_pct,
+    cast(100 * {{ safe_ratio('a.actual_arr_usd', 't.target_arr_usd') }}
+        as decimal(18, 4)) as arr_attainment_pct,
     case
         when t.reporting_month is null then 'MISSING_TARGET'
         when a.reporting_month is null then 'MISSING_ACTUAL'

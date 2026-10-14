@@ -25,12 +25,26 @@ models:
         data_tests: [not_null]
   - name: mart_mrr_waterfall
     description: One observed movement month after baseline; signed MRR movements and opening/closing balances.
+    config:
+      contract:
+        enforced: true
     columns:
       - name: reporting_month
+        data_type: date
         data_tests: [not_null, unique]
       - name: opening_mrr_usd
+        data_type: decimal(18, 2)
         data_tests: [not_null]
+      - name: new_mrr_usd
+        data_type: decimal(18, 2)
+      - name: expansion_mrr_usd
+        data_type: decimal(18, 2)
+      - name: contraction_mrr_usd
+        data_type: decimal(18, 2)
+      - name: churn_mrr_usd
+        data_type: decimal(18, 2)
       - name: closing_mrr_usd
+        data_type: decimal(18, 2)
         data_tests: [not_null]
   - name: mart_revenue_retention
     description: Gross and net dollar retention from observed subscription movements; NULL when opening MRR is zero.
