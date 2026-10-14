@@ -10,6 +10,7 @@ EXPECTED = {
     "00_cost_guardrails.sql",
     "01_governed_database_and_roles.sql",
     "02_session_observability.sql",
+    "03_diagnostic_queries.sql",
 }
 UNSAFE = (
     r"\bDROP\s+(?:DATABASE|SCHEMA|WAREHOUSE|ROLE)\b",
@@ -60,6 +61,14 @@ def validate_reference(root: Path = ROOT) -> list[str]:
         )
         if re.search(raw_reader_grant, text):
             errors.append("Fabric reader must not receive RAW access")
+    diagnostics = folder / "03_diagnostic_queries.sql"
+    if diagnostics.is_file():
+        text = diagnostics.read_text(encoding="utf-8").upper()
+        for marker in ("ACCOUNT_USAGE.QUERY_HISTORY", "ACCOUNT_USAGE.QUERY_ATTRIBUTION_HISTORY"):
+            if marker not in text:
+                errors.append(f"missing diagnostic source: {marker}")
+        if re.search(r"(?im)^\s*(?:ALTER|CREATE|DROP|INSERT|UPDATE|DELETE|CALL)\b", text):
+            errors.append("diagnostic worksheet must be read-only")
     return errors
 
 
