@@ -1,0 +1,41 @@
+table MRRWaterfall
+	column reporting_month
+		dataType: dateTime
+		isKey
+		summarizeBy: none
+		sourceColumn: reporting_month
+
+	column opening_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: opening_mrr_usd
+
+	column new_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: new_mrr_usd
+
+	column expansion_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: expansion_mrr_usd
+
+	column contraction_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: contraction_mrr_usd
+
+	column churn_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: churn_mrr_usd
+
+	column closing_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: closing_mrr_usd
+
+	partition MRRWaterfall = m
+		mode: import
+		source =
+			#table(type table [reporting_month = date, opening_mrr_usd = number, new_mrr_usd = number, expansion_mrr_usd = number, contraction_mrr_usd = number, churn_mrr_usd = number, closing_mrr_usd = number], {})

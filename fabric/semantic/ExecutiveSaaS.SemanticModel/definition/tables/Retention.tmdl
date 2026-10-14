@@ -1,0 +1,21 @@
+table Retention
+	column reporting_month
+		dataType: dateTime
+		isKey
+		summarizeBy: none
+		sourceColumn: reporting_month
+
+	column gross_revenue_retention_pct
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: gross_revenue_retention_pct
+
+	column net_revenue_retention_pct
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: net_revenue_retention_pct
+
+	partition Retention = m
+		mode: import
+		source =
+			#table(type table [reporting_month = date, gross_revenue_retention_pct = number, net_revenue_retention_pct = number], {})

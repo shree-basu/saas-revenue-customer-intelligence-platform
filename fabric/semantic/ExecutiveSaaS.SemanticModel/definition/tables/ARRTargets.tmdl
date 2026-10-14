@@ -1,0 +1,35 @@
+table ARRTargets
+	column reporting_month
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: reporting_month
+
+	column region
+		dataType: string
+		summarizeBy: none
+		sourceColumn: region
+
+	column segment
+		dataType: string
+		summarizeBy: none
+		sourceColumn: segment
+
+	column actual_arr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: actual_arr_usd
+
+	column target_arr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: target_arr_usd
+
+	column comparison_status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: comparison_status
+
+	partition ARRTargets = m
+		mode: import
+		source =
+			#table(type table [reporting_month = date, region = text, segment = text, actual_arr_usd = number, target_arr_usd = number, comparison_status = text], {})
