@@ -1,4 +1,13 @@
 table Customers
+	measure 'Current MRR USD' = SUM(Customers[current_mrr_usd])
+		formatString: $#,##0.00
+
+	measure 'Current ARR USD' = [Current MRR USD] * 12
+		formatString: $#,##0.00
+
+	measure 'At-Risk Accounts' = CALCULATE(DISTINCTCOUNT(Customers[account_id]), Customers[health_status] = "AT_RISK")
+		formatString: #,##0
+
 	column account_id
 		dataType: string
 		isKey

@@ -1,4 +1,10 @@
 table Retention
+	measure 'Gross Revenue Retention %' = IF(HASONEVALUE(Retention[reporting_month]), SELECTEDVALUE(Retention[gross_revenue_retention_pct]))
+		formatString: 0.00
+
+	measure 'Net Revenue Retention %' = IF(HASONEVALUE(Retention[reporting_month]), SELECTEDVALUE(Retention[net_revenue_retention_pct]))
+		formatString: 0.00
+
 	column reporting_month
 		dataType: dateTime
 		isKey

@@ -1,4 +1,10 @@
 table Renewals
+	measure 'Renewal ARR at Risk USD' = SUM(Renewals[renewal_arr_usd])
+		formatString: $#,##0.00
+
+	measure 'Renewing Subscriptions' = DISTINCTCOUNT(Renewals[subscription_id])
+		formatString: #,##0
+
 	column subscription_id
 		dataType: string
 		isKey

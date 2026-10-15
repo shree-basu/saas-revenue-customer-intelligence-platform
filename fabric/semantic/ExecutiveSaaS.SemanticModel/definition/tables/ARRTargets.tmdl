@@ -1,4 +1,13 @@
 table ARRTargets
+	measure 'Actual ARR USD' = SUM(ARRTargets[actual_arr_usd])
+		formatString: $#,##0.00
+
+	measure 'Planned ARR USD' = SUM(ARRTargets[target_arr_usd])
+		formatString: $#,##0.00
+
+	measure 'ARR Attainment %' = IF(COUNTROWS(FILTER(ARRTargets, ARRTargets[comparison_status] <> "MATCHED")) > 0, BLANK(), DIVIDE([Actual ARR USD], [Planned ARR USD]) * 100)
+		formatString: 0.00
+
 	column reporting_month
 		dataType: dateTime
 		summarizeBy: none

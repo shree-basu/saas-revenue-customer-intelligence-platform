@@ -1,4 +1,13 @@
 table MRRWaterfall
+	measure 'Opening MRR USD' = IF(HASONEVALUE(MRRWaterfall[reporting_month]), SELECTEDVALUE(MRRWaterfall[opening_mrr_usd]))
+		formatString: $#,##0.00
+
+	measure 'Net Movement MRR USD' = IF(HASONEVALUE(MRRWaterfall[reporting_month]), SUM(MRRWaterfall[new_mrr_usd]) + SUM(MRRWaterfall[expansion_mrr_usd]) + SUM(MRRWaterfall[contraction_mrr_usd]) + SUM(MRRWaterfall[churn_mrr_usd]))
+		formatString: $#,##0.00
+
+	measure 'Closing MRR USD' = IF(HASONEVALUE(MRRWaterfall[reporting_month]), SELECTEDVALUE(MRRWaterfall[closing_mrr_usd]))
+		formatString: $#,##0.00
+
 	column reporting_month
 		dataType: dateTime
 		isKey
