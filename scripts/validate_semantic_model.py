@@ -74,7 +74,8 @@ def validate(root: Path = ROOT) -> list[str]:
     }:
         errors.append("semantic table allowlist changed")
     if not re.fullmatch(
-        r"relationship [0-9a-f-]+\s+fromColumn: Renewals\.account_id\s+toColumn: Customers\.account_id\s*",
+        r"relationship [0-9a-f-]+\s+fromColumn: Renewals\.account_id\s+"
+        r"toColumn: Customers\.account_id\s*",
         relationships,
     ):
         errors.append("semantic relationship changed")
