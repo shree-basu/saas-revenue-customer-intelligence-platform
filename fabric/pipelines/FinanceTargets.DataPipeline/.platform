@@ -1,0 +1,12 @@
+{
+  "version": "2.0",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/platform/platformProperties.json",
+  "config": {
+    "logicalId": "e7b6a15c-38bb-5b82-9122-6472df105d11"
+  },
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "Finance Targets - Contract Only",
+    "description": "Inert reference item. No connections or data movement."
+  }
+}

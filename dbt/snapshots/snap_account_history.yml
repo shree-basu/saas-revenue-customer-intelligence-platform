@@ -1,0 +1,16 @@
+snapshots:
+  - name: snap_account_history
+    relation: ref('stg_accounts')
+    description: SCD2 history of observed CRM account versions; independent of current dim_account.
+    config:
+      schema: snapshots
+      unique_key: account_id
+      strategy: timestamp
+      updated_at: updated_at
+    columns:
+      - name: account_id
+        data_tests: [not_null]
+      - name: dbt_scd_id
+        data_tests: [not_null, unique]
+      - name: dbt_valid_from
+        data_tests: [not_null]

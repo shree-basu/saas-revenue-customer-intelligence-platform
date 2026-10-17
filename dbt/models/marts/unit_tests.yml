@@ -1,0 +1,13 @@
+unit_tests:
+  - name: retention_excludes_new_and_handles_zero_opening
+    description: Retention excludes new business and is undefined without opening MRR.
+    model: mart_revenue_retention
+    given:
+      - input: ref('mart_mrr_waterfall')
+        rows:
+          - {reporting_month: '2026-10-01', opening_mrr_usd: 100, closing_mrr_usd: 115, new_mrr_usd: 20, expansion_mrr_usd: 10, contraction_mrr_usd: -5, churn_mrr_usd: -10}
+          - {reporting_month: '2026-11-01', opening_mrr_usd: 0, closing_mrr_usd: 20, new_mrr_usd: 20, expansion_mrr_usd: 0, contraction_mrr_usd: 0, churn_mrr_usd: 0}
+    expect:
+      rows:
+        - {reporting_month: '2026-10-01', gross_revenue_retention_pct: 85, net_revenue_retention_pct: 95}
+        - {reporting_month: '2026-11-01', gross_revenue_retention_pct: null, net_revenue_retention_pct: null}

@@ -1,0 +1,50 @@
+table MRRWaterfall
+	measure 'Opening MRR USD' = IF(HASONEVALUE(MRRWaterfall[reporting_month]), SELECTEDVALUE(MRRWaterfall[opening_mrr_usd]))
+		formatString: $#,##0.00
+
+	measure 'Net Movement MRR USD' = IF(HASONEVALUE(MRRWaterfall[reporting_month]), SUM(MRRWaterfall[new_mrr_usd]) + SUM(MRRWaterfall[expansion_mrr_usd]) + SUM(MRRWaterfall[contraction_mrr_usd]) + SUM(MRRWaterfall[churn_mrr_usd]))
+		formatString: $#,##0.00
+
+	measure 'Closing MRR USD' = IF(HASONEVALUE(MRRWaterfall[reporting_month]), SELECTEDVALUE(MRRWaterfall[closing_mrr_usd]))
+		formatString: $#,##0.00
+
+	column reporting_month
+		dataType: dateTime
+		isKey
+		summarizeBy: none
+		sourceColumn: reporting_month
+
+	column opening_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: opening_mrr_usd
+
+	column new_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: new_mrr_usd
+
+	column expansion_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: expansion_mrr_usd
+
+	column contraction_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: contraction_mrr_usd
+
+	column churn_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: churn_mrr_usd
+
+	column closing_mrr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: closing_mrr_usd
+
+	partition MRRWaterfall = m
+		mode: import
+		source =
+			#table(type table [reporting_month = date, opening_mrr_usd = number, new_mrr_usd = number, expansion_mrr_usd = number, contraction_mrr_usd = number, churn_mrr_usd = number, closing_mrr_usd = number], {})

@@ -33,9 +33,7 @@ CREDENTIAL_PATTERNS = [
 
 
 def tracked_files() -> list[Path]:
-    result = subprocess.run(
-        ["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, check=True
-    )
+    result = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, check=True)
     return [ROOT / Path(item.decode()) for item in result.stdout.split(b"\0") if item]
 
 
@@ -50,14 +48,19 @@ def check() -> list[str]:
         if path.suffix.lower() in {".pem", ".key", ".p12", ".pfx"}:
             errors.append(f"tracked key-like file: {relative}")
         if path.suffix.lower() not in EXECUTABLE_SUFFIXES and path.suffix.lower() not in {
-            ".json", ".toml", ".sql", ".tmdl"
+            ".json",
+            ".toml",
+            ".sql",
+            ".tmdl",
         }:
             continue
         content = path.read_text(encoding="utf-8", errors="replace")
         for pattern in CREDENTIAL_PATTERNS:
             if re.search(pattern, content):
                 errors.append(f"credential pattern in {relative}")
-        executable = (relative.startswith(".github/workflows/") or relative.startswith("scripts/")) and path.name != Path(__file__).name
+        executable = (
+            relative.startswith(".github/workflows/") or relative.startswith("scripts/")
+        ) and path.name != Path(__file__).name
         if executable:
             for pattern in BANNED_EXECUTION:
                 if re.search(pattern, content, flags=re.IGNORECASE):

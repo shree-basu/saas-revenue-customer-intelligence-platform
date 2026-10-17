@@ -1,0 +1,16 @@
+name: saas_revenue
+version: '1.0.0'
+config-version: 2
+profile: saas_revenue
+model-paths: [models]
+clean-targets: [target, dbt_packages]
+models:
+  saas_revenue:
+    staging:
+      +materialized: view
+    core:
+      +materialized: table
+    intermediate:
+      +materialized: table
+    marts:
+      +materialized: table

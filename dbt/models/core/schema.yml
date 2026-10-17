@@ -1,0 +1,139 @@
+version: 2
+models:
+  - name: dim_account
+    description: One row per account_id in the latest validated batch; current state, not SCD2 history.
+    columns:
+      - name: account_key
+        data_tests: [not_null, unique]
+      - name: account_id
+        data_tests: [not_null, unique]
+  - name: dim_product
+    description: One row per product_id in the latest validated batch.
+    columns:
+      - name: product_key
+        data_tests: [not_null, unique]
+      - name: product_id
+        data_tests: [not_null, unique]
+  - name: dim_date
+    description: One row per distinct non-null business date observed in the validated batch.
+    columns:
+      - name: date_key
+        data_tests: [not_null, unique]
+      - name: calendar_date
+        data_tests: [not_null, unique]
+  - name: fct_invoices
+    description: One invoice per invoice_id; USD billing amount is not MRR or recognized revenue.
+    columns:
+      - name: invoice_key
+        data_tests: [not_null, unique]
+      - name: invoice_id
+        data_tests: [not_null, unique]
+      - name: subscription_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_subscriptions')
+                field: subscription_id
+      - name: account_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: invoice_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: amount
+        data_tests: [not_null]
+  - name: fct_product_usage_daily
+    description: One row per account, product and usage_date; no aggregation across that grain.
+    columns:
+      - name: usage_key
+        data_tests: [not_null, unique]
+      - name: account_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: usage_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+  - name: fct_support_cases
+    description: One row per support case_id, including open cases without closed_at.
+    columns:
+      - name: case_key
+        data_tests: [not_null, unique]
+      - name: case_id
+        data_tests: [not_null, unique]
+      - name: account_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: opened_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+  - name: fct_subscription_movements
+    description: One subscription per month after the initial observed baseline; signed MRR delta by mutually exclusive type.
+    columns:
+      - name: movement_key
+        data_tests: [not_null, unique]
+      - name: subscription_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_subscriptions')
+                field: subscription_id
+      - name: account_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_account')
+                field: account_key
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: state_month_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: movement_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [NEW, EXPANSION, CONTRACTION, CHURN, FLAT]
+      - name: movement_mrr_usd
+        data_tests: [not_null]

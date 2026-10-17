@@ -1,0 +1,42 @@
+table Renewals
+	measure 'Renewal ARR at Risk USD' = SUM(Renewals[renewal_arr_usd])
+		formatString: $#,##0.00
+
+	measure 'Renewing Subscriptions' = DISTINCTCOUNT(Renewals[subscription_id])
+		formatString: #,##0
+
+	column subscription_id
+		dataType: string
+		isKey
+		summarizeBy: none
+		sourceColumn: subscription_id
+
+	column account_id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: account_id
+
+	column reporting_date
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: reporting_date
+
+	column renewal_date
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: renewal_date
+
+	column days_until_renewal
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: days_until_renewal
+
+	column renewal_arr_usd
+		dataType: decimal
+		summarizeBy: none
+		sourceColumn: renewal_arr_usd
+
+	partition Renewals = m
+		mode: import
+		source =
+			#table(type table [subscription_id = text, account_id = text, reporting_date = date, renewal_date = date, days_until_renewal = Int64.Type, renewal_arr_usd = number], {})

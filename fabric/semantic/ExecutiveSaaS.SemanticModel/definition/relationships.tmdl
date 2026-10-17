@@ -1,0 +1,3 @@
+relationship 84617da3-10fe-46dd-a316-cac031818a4e
+	fromColumn: Renewals.account_id
+	toColumn: Customers.account_id

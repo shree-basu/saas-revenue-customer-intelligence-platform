@@ -1,0 +1,29 @@
+{
+  "status": "design_only_no_connection",
+  "source_domain": "Microsoft-side finance planning export",
+  "source_entity": "sales_targets",
+  "target_logical_table": "RAW.SALES_TARGETS",
+  "business_key": ["target_month", "region", "segment"],
+  "currency": "USD",
+  "fields": {
+    "target_month": "date_first_of_month",
+    "region": "nonempty_uppercase_text",
+    "segment": "nonempty_uppercase_text",
+    "arr_target": "decimal_18_2_nonnegative",
+    "new_arr_target": "decimal_18_2_nonnegative",
+    "renewal_target": "decimal_18_2_percentage_0_to_100",
+    "updated_at": "timestamp"
+  },
+  "landing_preconditions": [
+    "immutable_business_date_and_batch_id_path",
+    "manifest_expected_file_count_and_sha256",
+    "unique_business_key",
+    "reject_invalid_rows_before_publication"
+  ],
+  "future_copy_semantics": {
+    "mode": "validated_batch_then_idempotent_upsert",
+    "reject_partial_delivery": true,
+    "reconcile": ["source_row_count", "target_row_count", "target_amount_sum"],
+    "publish_only_after_reconciliation": true
+  }
+}

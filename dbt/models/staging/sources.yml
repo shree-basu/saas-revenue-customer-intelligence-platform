@@ -1,0 +1,64 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: accounts
+        columns:
+          - name: account_id
+            data_tests: [not_null, unique]
+      - name: subscriptions
+        columns:
+          - name: subscription_id
+            data_tests: [not_null, unique]
+          - name: account_id
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('raw', 'accounts')
+                    field: account_id
+      - name: subscription_monthly_states
+        columns:
+          - name: subscription_id
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('raw', 'subscriptions')
+                    field: subscription_id
+          - name: state_month
+            data_tests: [not_null]
+      - name: invoices
+        columns:
+          - name: invoice_id
+            data_tests: [not_null, unique]
+          - name: subscription_id
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('raw', 'subscriptions')
+                    field: subscription_id
+      - name: product_usage_daily
+        columns:
+          - name: account_id
+            data_tests: [not_null]
+          - name: product_id
+            data_tests: [not_null]
+          - name: usage_date
+            data_tests: [not_null]
+      - name: support_cases
+        columns:
+          - name: case_id
+            data_tests: [not_null, unique]
+      - name: sales_targets
+        columns:
+          - name: target_month
+            data_tests: [not_null]
+      - name: products
+        columns:
+          - name: product_id
+            data_tests: [not_null, unique]
+      - name: plans
+        columns:
+          - name: plan_id
+            data_tests: [not_null, unique]
